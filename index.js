@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, TextChannel, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, TextChannel, Partials, ApplicationCommandType, ApplicationCommandOptionType } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -13,9 +13,39 @@ const client = new Client({
     partials: [Partials.Channel],
 });
 
-client.on('ready', () => {
+client.on('ready', async () => {
     console.log(`دخلت السيرفر باسم ${client.user?.tag}!`);
     setInterval(updateProfile, 3600000);
+
+    // تسجيل أوامر السلاش
+    const commands = [
+        {
+            name: 'add-avatar',
+            description: 'لإضافة صورة شخصية جديدة لقائمة البوت.',
+            options: [
+                {
+                    name: 'image',
+                    description: 'الصورة اللي تبي تضيفها.',
+                    type: ApplicationCommandOptionType.Attachment,
+                    required: true,
+                },
+            ],
+        },
+        {
+            name: 'add-banner',
+            description: 'لإضافة بنر جديد لقائمة البوت.',
+            options: [
+                {
+                    name: 'image',
+                    description: 'الصورة اللي تبي تضيفها.',
+                    type: ApplicationCommandOptionType.Attachment,
+                    required: true,
+                },
+            ],
+        },
+    ];
+
+    await client.application?.commands.set(commands);
 });
 
 async function updateProfile() {
@@ -47,31 +77,31 @@ async function updateProfile() {
     }
 }
 
-client.on('messageCreate', async message => {
-    if (!message.guild || message.author.bot) return;
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isCommand()) return;
 
-    if (message.content.startsWith('!addavatar') || message.content.startsWith('!addbanner')) {
-        const isAvatarCommand = message.content.startsWith('!addavatar');
+    if (interaction.commandName === 'add-avatar' || interaction.commandName === 'add-banner') {
+        const isAvatarCommand = interaction.commandName === 'add-avatar';
         const targetChannelId = isAvatarCommand ? config.avatarChannelId : config.bannerChannelId;
 
-        const hasAllowedRole = message.member?.roles.cache.some(role => config.allowedRoles.includes(role.id));
+        const hasAllowedRole = interaction.member.roles.cache.some(role => config.allowedRoles.includes(role.id));
 
         if (!hasAllowedRole) {
-            return message.reply('مالك صلاحية تستخدم هذا الأمر.');
+            return interaction.reply({ content: 'مالك صلاحية تستخدم هذا الأمر.', ephemeral: true });
         }
 
-        const attachment = message.attachments.first();
+        const attachment = interaction.options.getAttachment('image');
         if (attachment && attachment.contentType?.startsWith('image')) {
             const targetChannel = await client.channels.fetch(targetChannelId);
             if (targetChannel) {
                 await targetChannel.send({
-                    content: `صورة/بنر جديد من ${message.author.tag}:`,
+                    content: `صورة/بنر جديد من ${interaction.user.tag}:`,
                     files: [attachment],
                 });
-                message.reply(`تم إضافة الصورة لقائمة الانتظار!`);
+                interaction.reply({ content: `تم إضافة الصورة لقائمة الانتظار!`, ephemeral: true });
             }
         } else {
-            message.reply('ياخوي، لازم تحط صورة مع الأمر.');
+            interaction.reply({ content: 'ياخوي، لازم تحط صورة مع الأمر.', ephemeral: true });
         }
     }
 });
