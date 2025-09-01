@@ -1,0 +1,8 @@
+  {
+"token":"توكن البوت",
+  "avatarChannelId": "ايدي روم الافتارات",
+  "bannerChannelId": "ايدي روم البنر",
+  "allowedRoles": [
+    "ايدي الرتبه"
+  ]
+}
